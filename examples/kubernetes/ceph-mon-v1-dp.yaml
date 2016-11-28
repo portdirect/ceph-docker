@@ -32,25 +32,59 @@ spec:
               }]
             }
           }
+        pod.alpha.kubernetes.io/init-containers: '[
+          {
+            "name": "ceph-mon-init",
+            "image": "docker.io/port/ceph-daemon:latest",
+            "imagePullPolicy": "Always",
+            "env": [
+              {
+                "name": "CEPH_DAEMON",
+                "value": "MON"
+              },
+              {
+                "name": "KV_TYPE",
+                "value": "k8s"
+              },
+              {
+                "name": "NETWORK_AUTO_DETECT",
+                "value": "1"
+              },
+              {
+                "name": "CLUSTER",
+                "value": "ceph"
+              },
+              {
+                "name": "INIT_ONLY",
+                "value": "1"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "ceph-conf",
+                "mountPath": "/etc/ceph"
+              },
+              {
+                "name": "ceph-bootstrap-osd-keyring",
+                "mountPath": "/var/lib/ceph/bootstrap-osd"
+              },
+              {
+                "name": "ceph-bootstrap-mds-keyring",
+                "mountPath": "/var/lib/ceph/bootstrap-mds"
+              },
+              {
+                "name": "ceph-bootstrap-rgw-keyring",
+                "mountPath": "/var/lib/ceph/bootstrap-rgw"
+              }
+            ]
+          }
+        ]'
     spec:
       serviceAccount: default
-      volumes:
-        - name: ceph-conf
-          secret:
-            secretName: ceph-conf-combined
-        - name: ceph-bootstrap-osd-keyring
-          secret:
-            secretName: ceph-bootstrap-osd-keyring
-        - name: ceph-bootstrap-mds-keyring
-          secret:
-            secretName: ceph-bootstrap-mds-keyring
-        - name: ceph-bootstrap-rgw-keyring
-          secret:
-            secretName: ceph-bootstrap-rgw-keyring
       containers:
         - name: ceph-mon
-          image: ceph/daemon:latest
-#          imagePullPolicy: Always
+          image: docker.io/port/ceph-daemon:latest
+          imagePullPolicy: Always
           lifecycle:
             preStop:
                 exec:
@@ -93,3 +127,16 @@ spec:
             limits:
               memory: "100Mi"
               cpu: "2000m"
+      volumes:
+        - name: ceph-conf
+          secret:
+            secretName: ceph-conf-combined
+        - name: ceph-bootstrap-osd-keyring
+          secret:
+            secretName: ceph-bootstrap-osd-keyring
+        - name: ceph-bootstrap-mds-keyring
+          secret:
+            secretName: ceph-bootstrap-mds-keyring
+        - name: ceph-bootstrap-rgw-keyring
+          secret:
+            secretName: ceph-bootstrap-rgw-keyring

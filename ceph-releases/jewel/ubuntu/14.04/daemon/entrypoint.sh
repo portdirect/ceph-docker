@@ -287,8 +287,13 @@ function start_mon {
 
   log "SUCCESS"
 
-  # start MON
-  exec /usr/bin/ceph-mon ${CEPH_OPTS} -d -i ${MON_NAME} --public-addr "${MON_IP}:6789" --setuser ceph --setgroup ceph
+
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start MON
+    exec /usr/bin/ceph-mon ${CEPH_OPTS} -d -i ${MON_NAME} --public-addr "${MON_IP}:6789" --setuser ceph --setgroup ceph
+  else
+    exit 0
+  fi
 }
 
 
@@ -359,7 +364,12 @@ function osd_directory_single {
       if python -c "import sys, fcntl, struct; l = fcntl.fcntl(open('/var/lib/ceph/osd/${CLUSTER}-${OSD_ID}/fsid', 'a'), fcntl.F_GETLK, struct.pack('hhllhh', fcntl.F_WRLCK, 0, 0, 0, 0, 0)); l_type, l_whence, l_start, l_len, l_pid, l_sysid = struct.unpack('hhllhh', l); sys.exit(0 if l_type == fcntl.F_UNLCK else 1)"; then
         log "Looks like OSD: ${OSD_ID} is not started, starting it..."
         log "SUCCESS"
-        exec ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} -k /var/lib/ceph/osd/${CLUSTER}-${OSD_ID}/keyring
+        if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+          # start MON
+          exec ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} -k /var/lib/ceph/osd/${CLUSTER}-${OSD_ID}/keyring
+        else
+          exit 0
+        fi
         break
       fi
     fi
@@ -456,7 +466,13 @@ function osd_directory {
 
   log "SUCCESS"
 
-  exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start MON
+    exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+  else
+    exit 0
+  fi
+
 }
 
 
@@ -582,7 +598,12 @@ function osd_activate {
       while [ -e /proc/${OSD_PID} ]; do sleep 1;done
   else
       log "SUCCESS"
-      exec /usr/bin/ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} --setuser ceph --setgroup disk
+      if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+        # start MON
+        exec /usr/bin/ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} --setuser ceph --setgroup disk
+      else
+        exit 0
+      fi
   fi
 }
 
@@ -641,7 +662,13 @@ function osd_disks {
 
     done
 
-    exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+    if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+      # start MON
+      exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+    else
+      exit 0
+    fi
+
   else
     for i in ${OSD_DISKS}; do
       OSD_ID=$(echo ${i}|sed 's/\(.*\):\(.*\)/\1/')
@@ -682,7 +709,14 @@ function osd_disks {
 
     log "SUCCESS"
 
-    exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+
+    if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+      # start MON
+      exec /usr/local/bin/forego start -f /etc/forego/${CLUSTER}/Procfile
+    else
+      exit 0
+    fi
+
   fi
 }
 
@@ -717,7 +751,15 @@ function osd_activate_journal {
       while [ -e /proc/${OSD_PID} ]; do sleep 1;done
   else
       log "SUCCESS"
-      exec /usr/bin/ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} --setuser ceph --setgroup disk
+
+
+      if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+        # start MON
+        exec /usr/bin/ceph-osd ${CEPH_OPTS} -f -i ${OSD_ID} --setuser ceph --setgroup disk
+      else
+        exit 0
+      fi
+
   fi
 }
 
@@ -783,7 +825,14 @@ function start_mds {
 
   log "SUCCESS"
   # NOTE: prefixing this with exec causes it to die (commit suicide)
-  /usr/bin/ceph-mds ${CEPH_OPTS} -d -i ${MDS_NAME} --setuser ceph --setgroup ceph
+
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start MON
+    /usr/bin/ceph-mds ${CEPH_OPTS} -d -i ${MDS_NAME} --setuser ceph --setgroup ceph
+  else
+    exit 0
+  fi
+
 }
 
 
@@ -822,11 +871,20 @@ function start_rgw {
 
   log "SUCCESS"
 
-  if [ "$RGW_REMOTE_CGI" -eq 1 ]; then
-    /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="fastcgi socket_port=$RGW_REMOTE_CGI_PORT socket_host=$RGW_REMOTE_CGI_HOST" --setuser ceph --setgroup ceph
+
+
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start MON
+    if [ "$RGW_REMOTE_CGI" -eq 1 ]; then
+      /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="fastcgi socket_port=$RGW_REMOTE_CGI_PORT socket_host=$RGW_REMOTE_CGI_HOST" --setuser ceph --setgroup ceph
+    else
+      /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="civetweb port=$RGW_CIVETWEB_PORT" --setuser ceph --setgroup ceph
+    fi
   else
-    /usr/bin/radosgw -d ${CEPH_OPTS} -n client.rgw.${RGW_NAME} -k /var/lib/ceph/radosgw/$RGW_NAME/keyring --rgw-socket-path="" --rgw-zonegroup="$RGW_ZONEGROUP" --rgw-zone="$RGW_ZONE" --rgw-frontends="civetweb port=$RGW_CIVETWEB_PORT" --setuser ceph --setgroup ceph
+    exit 0
   fi
+
+
 }
 
 function create_rgw_user {
@@ -839,6 +897,7 @@ function create_rgw_user {
 
   mkdir -p "/var/lib/ceph/radosgw/${RGW_NAME}"
   mv /var/lib/ceph/radosgw/keyring /var/lib/ceph/radosgw/${RGW_NAME}/keyring
+
 
   if [ -z "${RGW_USER_SECRET_KEY}" ]; then
     radosgw-admin user create --uid=${RGW_USER} --display-name="RGW ${RGW_USER} User" -c /etc/ceph/${CLUSTER}.conf
@@ -874,8 +933,14 @@ ENDHERE
 
   log "SUCCESS"
 
-  # start ceph-rest-api
-  exec /usr/bin/ceph-rest-api ${CEPH_OPTS} -n client.admin
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start ceph-rest-api
+    exec /usr/bin/ceph-rest-api ${CEPH_OPTS} -n client.admin
+  else
+    exit 0
+  fi
+
+
 
 }
 
@@ -894,8 +959,14 @@ function start_rbd_mirror {
   check_admin_key
 
   log "SUCCESS"
-  # start rbd-mirror
-  exec /usr/bin/rbd-mirror ${CEPH_OPTS} -d --setuser ceph --setgroup ceph
+
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start rbd-mirror
+    exec /usr/bin/rbd-mirror ${CEPH_OPTS} -d --setuser ceph --setgroup ceph
+  else
+    exit 0
+  fi
+
 
 }
 
@@ -920,8 +991,13 @@ function start_nfs {
   start_rpc
 
   log "SUCCESS"
-  # start ganesha
-  exec /usr/bin/ganesha.nfsd -F ${GANESHA_OPTIONS} ${GANESHA_EPOCH}
+  if [[ ! ${INIT_ONLY} -eq 1 ]]; then
+    # start ganesha
+    exec /usr/bin/ganesha.nfsd -F ${GANESHA_OPTIONS} ${GANESHA_EPOCH}
+  else
+    exit 0
+  fi
+
 
 }
 

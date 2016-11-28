@@ -79,8 +79,8 @@ We will be working on making this setup more agnostic, especially in regards to 
 By default, `10.244.0.0/16` is used for the `cluster_network` and `public_network` in ceph.conf. To change these defaults, set the following environment variables according to your network requirements. These IPs should be set according to the range of your Pod IPs in your kubernetes cluster:
 
 ```
-export osd_cluster_network=192.168.0.0/16
-export osd_public_network=192.168.0.0/16
+export osd_cluster_network=10.192.0.0/10
+export osd_public_network=10.192.0.0/10
 ```
 
 These will be picked up by sigil when generating the kubernetes secrets in the next section.
@@ -111,13 +111,21 @@ Please note that you should save the output files of this command, future invoca
 With the secrets created, you can now deploy ceph.
 
 ```
+kubectl get nodes -L kubeadm.alpha.kubernetes.io/role --no-headers | awk '$NF ~ /^<none>/ { print $1}' | while read NODE ; do
+kubectl label node $NODE --overwrite node-type=storage
+kubectl label node $NODE --overwrite openstack-control-plane=enabled
+done
+kubectl create namespace ceph
 kubectl create \
+-f ceph-bootstrap-secrets-job.yaml \
 -f ceph-mds-v1-dp.yaml \
 -f ceph-mon-v1-svc.yaml \
 -f ceph-mon-v1-dp.yaml \
 -f ceph-mon-check-v1-dp.yaml \
 -f ceph-osd-v1-ds.yaml \
+-f ceph-storage.yaml \
 --namespace=ceph
+kubectl get  --namespace=ceph pods
 ```
 
 Your cluster should now look something like this.
