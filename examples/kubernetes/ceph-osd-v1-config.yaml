@@ -1,0 +1,3 @@
+{
+  "command": "/usr/bin/ceph-osd -f -d --public-addr $MY_POD_IP  --cluster-addr $MY_POD_IP"
+}
