@@ -35,20 +35,6 @@ ceph-mds-6kz0n         0/1          Pending       0          24s
 ceph-mon-check-deek9   1/1          Running       0          24s
 ```
 
-### Label your storage nodes
-
-You must label your storage nodes in order to run Ceph pods on them.
-
-```
-kubectl label node <nodename> node-type-storage
-```
-
-If you want all nodes in your Kubernetes cluster to be a part of your Ceph cluster, label them all.
-
-```
-kubectl label nodes node-type=storage --all
-```
-
 Eventually all pods will be running, including a mon and osd per every labeled node.
 
 ```
