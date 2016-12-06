@@ -3,8 +3,6 @@
 
 ### Deploy Ceph Components
 
-With the secrets created, you can now deploy ceph.
-
 ```
 kubectl get nodes -L kubeadm.alpha.kubernetes.io/role --no-headers | awk '$NF ~ /^<none>/ { print $1}' | while read NODE ; do
 kubectl label node $NODE --overwrite node-type=storage
